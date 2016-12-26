@@ -58,6 +58,7 @@ function custom_upload_filter( $file ) {
             'SourceFile' => $filepath,
             'ACL'        => 'public-read',
         ));
+
     }
     catch(Exception $e) {
         print_r($e);
@@ -65,6 +66,33 @@ function custom_upload_filter( $file ) {
     return $file;
 }
 
-// TODO: Delete media
+add_action( 'delete_attachment', 'delete_onstorage' );
+function delete_onstorage( $post_id )
+{
+    $filepath = get_attached_file($post_id);
+    $keyname = substr($filepath, strrpos($filepath, '/') + 1);
+
+    try {
+        global $endpoint, $bucket, $accessKey, $secretKey;
+
+        $s3 = S3Client::factory(array(
+            'endpoint' => $endpoint,
+            'region' => 'eu-west-1',
+            'version' => '2006-03-01',
+            'credentials' => array(
+                'key' => $accessKey,
+                'secret' => $secretKey
+            )
+        ));
+
+        $result = $s3->deleteObject(array(
+            'Bucket' => $bucket,
+            'Key' => $keyname
+        ));
+
+    } catch (Exception $e) {
+        print_r($e);
+    }
+}
 
 ?>
